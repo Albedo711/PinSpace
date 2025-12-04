@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
+import 'detail_page.dart';
 import '../Services/photo_service.dart';
 import '../model/photo.dart';
 import '../model/user.dart';
@@ -202,7 +202,7 @@ class _HomePageState extends State<HomePage> {
               size: 26,
             )
           : Image.network(
-              "http://127.0.0.1:8000/${userModel!.avatar}",
+              "http://192.168.1.3:8000/${userModel!.avatar}",
               fit: BoxFit.cover,
               errorBuilder: (context, error, stackTrace) {
                 return const Icon(
@@ -314,17 +314,27 @@ class _HomePageState extends State<HomePage> {
                             itemBuilder: (context, index) {
                               final item = photos[index];
                               final String imagePath =
-                                  "http://127.0.0.1:8000/${item.imagePath}";
+                                  "http://192.168.1.3:8000/${item.imagePath}";
 
-                              return ClipRRect(
-                                borderRadius: BorderRadius.circular(16),
-                                child: Image.network(
-                                  imagePath,
-                                  width: width,
-                                  height: height,
-                                  fit: BoxFit.cover,
-                                ),
-                              );
+                              return GestureDetector(
+  onTap: () {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => PhotoDetailPage(photo: item),
+      ),
+    );
+  },
+  child: ClipRRect(
+    borderRadius: BorderRadius.circular(16),
+    child: Image.network(
+      imagePath,
+      width: width,
+      height: height,
+      fit: BoxFit.cover,
+    ),
+  ),
+);
                             },
                           );
                         },

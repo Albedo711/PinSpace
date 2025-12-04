@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../Services/photo_service.dart';
+import '../Pages/home_page.dart';
 
 class UploadPage extends StatefulWidget {
   const UploadPage({super.key});
@@ -149,9 +150,15 @@ class _UploadPageState extends State<UploadPage> {
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text("Cancel", style: TextStyle(color: Colors.white)),
-                ),
+  onPressed: () {
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => HomePage()),
+    );
+  },
+  child: const Text("Cancel", style: TextStyle(color: Colors.white)),
+),
+
                 const SizedBox(width: 12),
                 ElevatedButton.icon(
                   icon: const Icon(Icons.upload, color: Colors.white),
@@ -181,7 +188,11 @@ class _UploadPageState extends State<UploadPage> {
                         const SnackBar(content: Text("Upload berhasil!")),
                       );
 
-                      Navigator.pop(context);
+                      Navigator.pushReplacement(
+  context,
+  MaterialPageRoute(builder: (context) => HomePage()),
+);
+
                     } catch (e) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(content: Text("Upload gagal: $e")),
