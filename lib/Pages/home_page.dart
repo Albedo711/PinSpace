@@ -11,7 +11,7 @@ import 'register_page.dart';
 // import 'search_page.dart';
 import 'upload_page.dart';
 // import 'board_page.dart';
-// import 'profile_page.dart';
+import 'profile_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -123,7 +123,10 @@ class _HomePageState extends State<HomePage> {
   } else if (index == 3) {
     // TODO: Board Page
   } else if (index == 4) {
-    // TODO: Profile Page
+     Navigator.pushReplacement(
+    context,
+    MaterialPageRoute(builder: (_) => const ProfilePage()),
+  );
   }
 }
 

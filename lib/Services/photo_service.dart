@@ -24,6 +24,23 @@ class PhotoService {
     List data = response.data['data']['data'];
     return data.map((item) => Photo.fromJson(item)).toList();
   }
+
+  Future<List<Photo>> getUserPhotos() async {
+  final prefs = await SharedPreferences.getInstance();
+  final token = prefs.getString('token') ?? "";
+
+  final response = await _dio.get(
+    "$baseUrl/user/photos",
+    options: Options(
+      headers: {"Authorization": "Bearer $token"},
+    ),
+  );
+
+  // Ambil array foto dari data pagination
+  List data = response.data['data']['data']; // <-- perhatikan 'data' di dalam 'data'
+  return data.map((item) => Photo.fromJson(item)).toList();
+}
+
  
   // =============================== UPLOAD ===============================
   Future<Photo> uploadPhoto({
