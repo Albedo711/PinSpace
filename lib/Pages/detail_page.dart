@@ -6,6 +6,7 @@ import 'package:dio/dio.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'dart:html' as html;
+import '../Services/comments_service.dart';
 
 class PhotoDetailPage extends StatefulWidget {
   final Photo photo;
@@ -22,13 +23,53 @@ class _PhotoDetailPageState extends State<PhotoDetailPage> {
   bool isLiked = false;
   int likeCount = 0;
   final PhotoService _photoService = PhotoService();
+  List<dynamic> comments = [];
+  bool loadingComments = true;
+  final CommentService _commentService = CommentService();
+  final TextEditingController _commentController = TextEditingController();
 
   @override
 void initState() {
   super.initState();
   fetchRelatedPhotos();
   fetchPhotoLikeInfo();
+  fetchComments();
 }
+
+  Future<void> fetchComments() async {
+  try {
+    comments = await _commentService.getComments(widget.photo.id);
+
+    setState(() {
+      loadingComments = false;
+    });
+  } catch (e) {
+    loadingComments = false;
+  }
+}
+
+Future<void> sendComment() async {
+  final text = _commentController.text.trim();
+  if (text.isEmpty) return;
+
+  try {
+    await _commentService.addComment(widget.photo.id, text);
+
+    _commentController.clear();
+
+    await fetchComments();
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text("Comment added!")),
+    );
+  } catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text("Failed to comment: $e")),
+    );
+  }
+}
+
+
 
 Future<void> fetchPhotoLikeInfo() async {
   try {
@@ -73,7 +114,7 @@ Future<void> fetchPhotoLikeInfo() async {
   }
 
   Future<void> _downloadPhotoWeb() async {
-  final url = "http://192.168.1.3:8000/api/photos/${widget.photo.id}/download";
+  final url = "http://192.168.100.44:8000/api/photos/${widget.photo.id}/download";
   final filename = "${widget.photo.title.replaceAll(' ', '_')}.jpg";
 
   final anchor = html.AnchorElement(href: url)
@@ -96,7 +137,7 @@ Future<void> fetchPhotoLikeInfo() async {
   }
 
   final dio = Dio();
-  final url = "http://192.168.1.3:8000/api/photos/${widget.photo.id}/download";
+  final url = "http://192.168.100.44:8000/api/photos/${widget.photo.id}/download";
 
   try {
     final dir = await getApplicationDocumentsDirectory(); // Bisa diganti getExternalStorageDirectory() untuk Android
@@ -124,7 +165,7 @@ Future<void> fetchPhotoLikeInfo() async {
 
   @override
   Widget build(BuildContext context) {
-    final String imagePath = "http://192.168.1.3:8000/${widget.photo.imagePath}";
+    final String imagePath = "http://192.168.100.44:8000/${widget.photo.imagePath}";
 
     return Scaffold(
       backgroundColor: const Color(0xFF0F1523),
@@ -237,7 +278,7 @@ Future<void> fetchPhotoLikeInfo() async {
                       const SizedBox(width: 20),
                       _buildActionButton(
                         icon: Icons.mode_comment_outlined,
-                        label: "0",
+                        label: "${comments.length}",
                         color: Colors.white70,
                       ),
                       const Spacer(),
@@ -540,7 +581,7 @@ Future<void> fetchPhotoLikeInfo() async {
                               itemCount: relatedPhotos.length,
                               itemBuilder: (context, index) {
                                 final relatedPhoto = relatedPhotos[index];
-                                final relatedImagePath = "http://192.168.1.3:8000/${relatedPhoto.imagePath}";
+                                final relatedImagePath = "http://192.168.100.44:8000/${relatedPhoto.imagePath}";
 
                                 return GestureDetector(
                                   onTap: () {
@@ -658,7 +699,7 @@ Future<void> fetchPhotoLikeInfo() async {
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
-                          "0",
+                          "${comments.length}",
                           style: TextStyle(
                             color: Colors.deepPurpleAccent[100],
                             fontSize: 14,
@@ -708,16 +749,18 @@ Future<void> fetchPhotoLikeInfo() async {
                         ),
                       ),
                       const SizedBox(width: 12),
-                      const Expanded(
+                      Expanded(
                         child: TextField(
-                          style: TextStyle(color: Colors.white),
-                          decoration: InputDecoration(
+                          controller: _commentController,   // <-- WAJIB
+                          style: const TextStyle(color: Colors.white),
+                          decoration: const InputDecoration(
                             hintText: "Add a comment...",
                             hintStyle: TextStyle(color: Colors.white38),
                             border: InputBorder.none,
                           ),
                         ),
                       ),
+
                       Container(
                         width: 36,
                         height: 36,
@@ -736,16 +779,70 @@ Future<void> fetchPhotoLikeInfo() async {
                             color: Colors.white,
                             size: 18,
                           ),
-                          onPressed: () {
-                            // TODO: Implement comment
-                          },
+                          onPressed: sendComment,
                         ),
                       ),
                     ],
                   ),
                 ),
 
-                const SizedBox(height: 40),
+                const SizedBox(height: 20),
+
+                loadingComments
+    ? const Center(
+        child: Padding(
+          padding: EdgeInsets.all(20),
+          child: CircularProgressIndicator(color: Colors.deepPurpleAccent),
+        ),
+      )
+    : comments.isEmpty
+        ? Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            child: Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: const Color(0xFF1A2332),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.chat_bubble_outline,
+                      color: Colors.white38, size: 28),
+                  const SizedBox(width: 12),
+                  const Text(
+                    "Tidak ada komentar",
+                    style: TextStyle(
+                      color: Colors.white54,
+                      fontSize: 15,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          )
+        : ListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: comments.length,
+            itemBuilder: (context, index) {
+              final c = comments[index];
+              return ListTile(
+                leading: const CircleAvatar(
+                  child: Icon(Icons.person),
+                ),
+                title: Text(
+                  c["user"]["name"] ?? "Unknown",
+                  style: const TextStyle(color: Colors.white),
+                ),
+                subtitle: Text(
+                  c["comment"],
+                  style: const TextStyle(color: Colors.white70),
+                ),
+              );
+            },
+          ),
+
+
               ],
             ),
           ),

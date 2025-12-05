@@ -1,3 +1,4 @@
+import 'package:aplikasi_gallery/Pages/search_page.dart';
 import 'package:flutter/material.dart';
 import '../model/user.dart';
 import '../model/photo.dart';
@@ -5,6 +6,9 @@ import '../Services/photo_service.dart';
 import '../Services/user_service.dart';
 import 'detail_page.dart';
 import 'update_profile_page.dart';
+import 'home_page.dart';
+import 'upload_page.dart';
+import 'edit_foto.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -17,6 +21,7 @@ class _ProfilePageState extends State<ProfilePage> {
   UserModel? user;
   List<Photo> userPhotos = [];
   bool loading = true;
+  int currentIndex = 4;
 
   final PhotoService _photoService = PhotoService();
   final UserService _userService = UserService();
@@ -26,6 +31,40 @@ class _ProfilePageState extends State<ProfilePage> {
     super.initState();
     loadUserData();
   }
+  void onTabTapped(int index) {
+  setState(() => currentIndex = index);
+
+  if (index == 0) {
+    Navigator.pushReplacement(
+  context,
+  PageRouteBuilder(
+    pageBuilder: (context, animation, secondaryAnimation) => const HomePage(),
+    transitionDuration: Duration.zero,
+    reverseTransitionDuration: Duration.zero,
+  ),
+);
+
+  } else if (index == 1) {
+    Navigator.pushReplacement(
+  context,
+  PageRouteBuilder(
+    pageBuilder: (context, animation, secondaryAnimation) => const SearchPage(),
+    transitionDuration: Duration.zero,
+    reverseTransitionDuration: Duration.zero,
+  ),
+);
+  } else if (index == 2) {
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (_) => const UploadPage()),
+    );
+  } else if (index == 3) {
+    // TODO: Board Page
+  } else if (index == 4) {
+    // sudah di profile, tidak perlu navigasi
+  }
+}
+
 
   void _navigateToEditProfile() {
   if (user == null) return; // pastikan user sudah terload
@@ -198,7 +237,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                             ),
                                           )
                                         : Image.network(
-                                            "http://192.168.1.3:8000/${user!.avatar}",
+                                            "http://192.168.100.44:8000/${user!.avatar}",
                                             fit: BoxFit.cover,
                                             errorBuilder:
                                                 (context, error, stackTrace) {
@@ -355,136 +394,256 @@ class _ProfilePageState extends State<ProfilePage> {
                               ),
                             ),
                           )
-                        : SliverPadding(
-                            padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-                            sliver: SliverGrid(
-                              gridDelegate:
-                                  const SliverGridDelegateWithMaxCrossAxisExtent(
-                                maxCrossAxisExtent: 200,
-                                mainAxisSpacing: 12,
-                                crossAxisSpacing: 12,
-                                childAspectRatio: 0.75,
-                              ),
-                              delegate: SliverChildBuilderDelegate(
-                                (context, index) {
-                                  final photo = userPhotos[index];
-                                  final imageUrl = photo.imagePath.startsWith('http')
-                                      ? photo.imagePath
-                                      : "http://192.168.1.3:8000/${photo.imagePath}";
+                        : // Ganti bagian SliverGrid di profile_page.dart dengan kode ini:
 
-                                  return GestureDetector(
-                                    onTap: () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (_) =>
-                                              PhotoDetailPage(photo: photo),
+// Di dalam userPhotos.isEmpty ? ... : 
+SliverToBoxAdapter(
+  child: Padding(
+    padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+    child: LayoutBuilder(
+      builder: (context, constraints) {
+        int columnCount;
+        double screenWidth = constraints.maxWidth;
+
+        if (screenWidth >= 900) {
+          columnCount = 4;
+        } else if (screenWidth >= 600) {
+          columnCount = 3;
+        } else {
+          columnCount = 2;
+        }
+
+        // Bagi foto ke dalam kolom
+        List<List<Photo>> columns = List.generate(columnCount, (_) => []);
+        
+        for (int i = 0; i < userPhotos.length; i++) {
+          columns[i % columnCount].add(userPhotos[i]);
+        }
+
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: List.generate(columnCount, (columnIndex) {
+            return Expanded(
+              child: Padding(
+                padding: EdgeInsets.only(
+                  left: columnIndex == 0 ? 0 : 4,
+                  right: columnIndex == columnCount - 1 ? 0 : 4,
+                ),
+                child: Column(
+                  children: columns[columnIndex].map((photo) {
+                    final imageUrl = photo.imagePath.startsWith('http')
+                        ? photo.imagePath
+                        : "http://192.168.100.44:8000/${photo.imagePath}";
+
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: GestureDetector(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => PhotoDetailPage(photo: photo),
+                            ),
+                          );
+                        },
+                        child: Hero(
+                          tag: 'photo_${photo.imagePath}',
+                          child: Stack(
+                            children: [
+                              Container(
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(12),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.2),
+                                      blurRadius: 6,
+                                      offset: const Offset(0, 3),
+                                    ),
+                                  ],
+                                ),
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: Image.network(
+                                    imageUrl,
+                                    fit: BoxFit.cover,
+                                    width: double.infinity,
+                                    loadingBuilder: (context, child, progress) {
+                                      if (progress == null) return child;
+                                      return AspectRatio(
+                                        aspectRatio: 1,
+                                        child: Container(
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFF1A1F3A),
+                                            borderRadius: BorderRadius.circular(12),
+                                          ),
+                                          child: Center(
+                                            child: CircularProgressIndicator(
+                                              value: progress.expectedTotalBytes != null
+                                                  ? progress.cumulativeBytesLoaded /
+                                                      progress.expectedTotalBytes!
+                                                  : null,
+                                              color: const Color(0xFF6C63FF),
+                                            ),
+                                          ),
                                         ),
                                       );
                                     },
-                                    child: Hero(
-                                      tag: 'photo_${photo.imagePath}',
-                                      child: Container(
-                                        decoration: BoxDecoration(
-                                          borderRadius: BorderRadius.circular(16),
-                                          boxShadow: [
-                                            BoxShadow(
-                                              color: Colors.black.withOpacity(0.3),
-                                              blurRadius: 8,
-                                              offset: const Offset(0, 4),
-                                            ),
-                                          ],
-                                        ),
-                                        child: ClipRRect(
-                                          borderRadius: BorderRadius.circular(16),
-                                          child: Stack(
-                                            fit: StackFit.expand,
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return AspectRatio(
+                                        aspectRatio: 1,
+                                        child: Container(
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFF1A1F3A),
+                                            borderRadius: BorderRadius.circular(12),
+                                          ),
+                                          child: Column(
+                                            mainAxisAlignment: MainAxisAlignment.center,
                                             children: [
-                                              Image.network(
-                                                imageUrl,
-                                                fit: BoxFit.cover,
-                                                loadingBuilder:
-                                                    (context, child, progress) {
-                                                  if (progress == null) return child;
-                                                  return Container(
-                                                    decoration: BoxDecoration(
-                                                      color: const Color(0xFF1A1F3A),
-                                                      borderRadius:
-                                                          BorderRadius.circular(16),
-                                                    ),
-                                                    child: Center(
-                                                      child: CircularProgressIndicator(
-                                                        value: progress
-                                                                    .expectedTotalBytes !=
-                                                                null
-                                                            ? progress
-                                                                    .cumulativeBytesLoaded /
-                                                                progress
-                                                                    .expectedTotalBytes!
-                                                            : null,
-                                                        color: const Color(0xFF6C63FF),
-                                                      ),
-                                                    ),
-                                                  );
-                                                },
-                                                errorBuilder:
-                                                    (context, error, stackTrace) {
-                                                  return Container(
-                                                    decoration: BoxDecoration(
-                                                      color: const Color(0xFF1A1F3A),
-                                                      borderRadius:
-                                                          BorderRadius.circular(16),
-                                                    ),
-                                                    child: Column(
-                                                      mainAxisAlignment:
-                                                          MainAxisAlignment.center,
-                                                      children: [
-                                                        Icon(
-                                                          Icons.broken_image_outlined,
-                                                          color: Colors.white
-                                                              .withOpacity(0.3),
-                                                          size: 40,
-                                                        ),
-                                                        const SizedBox(height: 8),
-                                                        Text(
-                                                          "Error",
-                                                          style: TextStyle(
-                                                            color: Colors.white
-                                                                .withOpacity(0.3),
-                                                            fontSize: 12,
-                                                          ),
-                                                        ),
-                                                      ],
-                                                    ),
-                                                  );
-                                                },
+                                              Icon(
+                                                Icons.broken_image_outlined,
+                                                color: Colors.white.withOpacity(0.3),
+                                                size: 40,
                                               ),
-                                              // Gradient overlay
-                                              Container(
-                                                decoration: BoxDecoration(
-                                                  gradient: LinearGradient(
-                                                    begin: Alignment.topCenter,
-                                                    end: Alignment.bottomCenter,
-                                                    colors: [
-                                                      Colors.transparent,
-                                                      Colors.black.withOpacity(0.3),
-                                                    ],
-                                                  ),
+                                              const SizedBox(height: 8),
+                                              Text(
+                                                "Error",
+                                                style: TextStyle(
+                                                  color: Colors.white.withOpacity(0.3),
+                                                  fontSize: 12,
                                                 ),
                                               ),
                                             ],
                                           ),
                                         ),
-                                      ),
-                                    ),
-                                  );
-                                },
-                                childCount: userPhotos.length,
+                                      );
+                                    },
+                                  ),
+                                ),
                               ),
-                            ),
+                              // Tombol Edit/Delete
+                              Positioned(
+                                top: 8,
+                                right: 8,
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    color: Colors.black54,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: PopupMenuButton<String>(
+                                    icon: const Icon(Icons.more_vert, color: Colors.white, size: 20),
+                                    onSelected: (value) async {
+                                      if (value == 'edit') {
+                                        if (photo.id == null) {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            const SnackBar(content: Text('Photo ID tidak tersedia')),
+                                          );
+                                          return;
+                                        }
+
+                                        await Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (_) => EditPhotoPage(photo: photo),
+                                          ),
+                                        );
+
+                                        await loadUserData();
+                                      } else if (value == 'delete') {
+                                        bool? confirmed = await showDialog(
+                                          context: context,
+                                          builder: (context) => AlertDialog(
+                                            title: const Text('Hapus Foto'),
+                                            content: const Text('Apakah Anda yakin ingin menghapus foto ini?'),
+                                            actions: [
+                                              TextButton(
+                                                onPressed: () => Navigator.pop(context, false),
+                                                child: const Text('Batal'),
+                                              ),
+                                              TextButton(
+                                                onPressed: () => Navigator.pop(context, true),
+                                                child: const Text('Hapus', style: TextStyle(color: Colors.red)),
+                                              ),
+                                            ],
+                                          ),
+                                        );
+
+                                        if (confirmed == true) {
+                                          try {
+                                            await _photoService.deletePhoto(photo.id!);
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              const SnackBar(content: Text('Foto berhasil dihapus')),
+                                            );
+                                            await loadUserData();
+                                          } catch (e) {
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              SnackBar(content: Text('Gagal menghapus foto: $e')),
+                                            );
+                                          }
+                                        }
+                                      }
+                                    },
+                                    itemBuilder: (context) => [
+                                      const PopupMenuItem(
+                                        value: 'edit',
+                                        child: Text('Edit'),
+                                      ),
+                                      const PopupMenuItem(
+                                        value: 'delete',
+                                        child: Text('Delete', style: TextStyle(color: Colors.red)),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              )
+                            ],
                           ),
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+            );
+          }),
+        );
+      },
+    ),
+  ),
+)
+
                   ],
                 ),
+                bottomNavigationBar: BottomNavigationBar(
+  type: BottomNavigationBarType.fixed,
+  backgroundColor: const Color(0xFF1A2332),
+  selectedItemColor: Colors.white,
+  unselectedItemColor: Colors.white54,
+  currentIndex: currentIndex,
+  onTap: onTabTapped,
+  items: const [
+    BottomNavigationBarItem(
+      icon: Icon(Icons.home_outlined),
+      label: "Home",
+    ),
+    BottomNavigationBarItem(
+      icon: Icon(Icons.search),
+      label: "Search",
+    ),
+    BottomNavigationBarItem(
+      icon: Icon(Icons.add_circle, size: 32),
+      label: "Upload",
+    ),
+    BottomNavigationBarItem(
+      icon: Icon(Icons.dashboard_outlined),
+      label: "Board",
+    ),
+    BottomNavigationBarItem(
+      icon: Icon(Icons.person_outline),
+      label: "Profile",
+    ),
+  ],
+),
+
     );
   }
 

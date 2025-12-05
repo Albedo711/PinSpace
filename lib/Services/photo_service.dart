@@ -8,7 +8,7 @@ import 'dart:convert';
 
 class PhotoService {
   final Dio _dio = Dio();
-  final String baseUrl = "http://192.168.1.3:8000/api";
+  final String baseUrl = "http://192.168.100.44:8000/api";
 
   Future<List<Photo>> getPhotos() async {
     final prefs = await SharedPreferences.getInstance();
@@ -163,6 +163,83 @@ Future<Map<String, dynamic>> getPhotoLikes(int photoId) async {
     return response.data['data'];
   } else {
     throw Exception('Failed to fetch photo like info');
+  }
+}
+
+ Future<Photo> updatePhoto(
+    int photoId, {
+    required String title,
+    String? description,
+    required String category,
+    Uint8List? fileBytes,
+    io.File? file,
+  }) async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('token') ?? "";
+
+    FormData formData;
+
+    if ((fileBytes != null) || (file != null)) {
+      MultipartFile photoFile;
+
+      if (kIsWeb) {
+        photoFile = MultipartFile.fromBytes(fileBytes!, filename: "upload.jpg");
+      } else {
+        photoFile =
+            await MultipartFile.fromFile(file!.path, filename: file.path.split("/").last);
+      }
+
+      formData = FormData.fromMap({
+        "title": title,
+        "description": description,
+        "category": category,
+        "image": photoFile,
+      });
+    } else {
+      formData = FormData.fromMap({
+        "title": title,
+        "description": description,
+        "category": category,
+      });
+    }
+
+    final response = await _dio.post(
+      "$baseUrl/photos/$photoId",
+      data: formData,
+      options: Options(headers: {
+        "Authorization": "Bearer $token",
+        "Content-Type": "multipart/form-data",
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      return Photo.fromJson(response.data['data']);
+    } else {
+      throw Exception("Gagal memperbarui foto");
+    }
+  }
+
+// =============================== DELETE PHOTO ===============================
+Future<void> deletePhoto(int photoId) async {
+  final prefs = await SharedPreferences.getInstance();
+  final token = prefs.getString('token') ?? "";
+
+  try {
+    final response = await _dio.delete(
+      "$baseUrl/photos/$photoId",
+      options: Options(
+        headers: {
+          "Authorization": "Bearer $token",
+          "Accept": "application/json",
+        },
+      ),
+    );
+
+    if (response.statusCode != 200 && response.statusCode != 204) {
+      throw Exception('Gagal menghapus foto');
+    }
+  } catch (e) {
+    throw Exception('Error menghapus foto: $e');
   }
 }
 
