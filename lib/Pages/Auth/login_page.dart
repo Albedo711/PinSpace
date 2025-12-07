@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:aplikasi_gallery/Services/api_service.dart';
 import '../home_page.dart';
+import 'register_page.dart';
+import 'package:flutter/material.dart';
 
 class LoginPage extends StatefulWidget {
   @override
@@ -201,23 +203,38 @@ class _LoginPageState extends State<LoginPage> {
               SizedBox(height: 25),
 
               Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text("Belum punya akun?",
-                      style: TextStyle(color: Colors.white70)),
-                  SizedBox(width: 5),
-                  GestureDetector(
-                    onTap: () => Navigator.pushNamed(context, "/register"),
-                    child: Text(
-                      "Register sekarang",
-                      style: TextStyle(
-                        color: Colors.purpleAccent,
-                        fontWeight: FontWeight.bold,
-                      ),
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Text(
+                      "Belum punya akun?",
+                      style: TextStyle(color: Colors.white70),
                     ),
-                  )
-                ],
-              )
+                    const SizedBox(width: 5),
+                    MouseRegion(
+                        cursor: SystemMouseCursors.click,
+                        child: GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              PageRouteBuilder(
+                                pageBuilder: (context, animation, secondaryAnimation) => RegisterPage(),
+                                transitionDuration: Duration.zero,
+                                reverseTransitionDuration: Duration.zero,
+                              ),
+                            );
+
+                          },
+                          child: const Text(
+                            "Register sekarang",
+                            style: TextStyle(
+                              color: Colors.purpleAccent,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      )
+                  ],
+                )
             ],
           ),
         ),

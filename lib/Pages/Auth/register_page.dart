@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:aplikasi_gallery/Services/api_service.dart';
+import 'login_page.dart';
+import 'package:flutter/material.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -226,21 +228,39 @@ class _RegisterPageState extends State<RegisterPage> {
 
             /// Login Link
             Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text("Sudah punya akun?",
-                    style: TextStyle(color: Colors.white70)),
-                TextButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                  },
-                  child: const Text(
-                    "Login sekarang",
-                    style: TextStyle(color: Colors.purpleAccent),
-                  ),
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Text(
+                      "Sudah punya akun?",
+                      style: TextStyle(color: Colors.white70),
+                    ),
+                    const SizedBox(width: 5),
+                    MouseRegion(
+                        cursor: SystemMouseCursors.click,
+                        child: GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                                context,
+                                PageRouteBuilder(
+                                  pageBuilder: (context, animation, secondaryAnimation) => LoginPage(),
+                                  transitionDuration: Duration.zero,
+                                  reverseTransitionDuration: Duration.zero,
+                                ),
+                              );
+
+                          },
+                          child: const Text(
+                            "Login sekarang",
+                            style: TextStyle(
+                              color: Colors.purpleAccent,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      )
+                  ],
                 )
-              ],
-            )
+
           ],
         ),
       ),

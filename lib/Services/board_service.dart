@@ -3,6 +3,7 @@ import 'package:dio/dio.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../model/board.dart';
+import '../model/photo.dart'; // TAMBAHKAN IMPORT INI
 
 class BoardService {
   final Dio _dio = Dio(
@@ -45,6 +46,51 @@ class BoardService {
     } catch (e) {
       print("Error: $e");
       throw Exception("Gagal memuat boards");
+    }
+  }
+
+  // METHOD BARU: Get Board Photos
+  Future<List<Photo>> getBoardPhotos(int boardId) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString("token");
+
+      if (token == null) {
+        throw Exception("Token tidak ditemukan. Harus login dulu.");
+      }
+
+      // set authorization header
+      _dio.options.headers["Authorization"] = "Bearer $token";
+
+      final response = await _dio.get("/boards/$boardId/photos");
+
+      if (response.statusCode == 200) {
+        final jsonData = response.data;
+        
+        if (jsonData['success'] == true && jsonData['data'] != null) {
+          final paginationData = jsonData['data'];
+          final List photoList = paginationData['data'] ?? [];
+          
+          return photoList.map((item) => Photo.fromJson(item)).toList();
+        } else {
+          throw Exception("Format response tidak valid");
+        }
+      } else {
+        throw Exception("Gagal memuat foto board");
+      }
+    } on DioException catch (e) {
+      print("Dio error: ${e.response?.data}");
+      
+      if (e.response?.statusCode == 403) {
+        throw Exception("Anda tidak memiliki akses ke board ini");
+      } else if (e.response?.statusCode == 404) {
+        throw Exception("Board tidak ditemukan");
+      }
+      
+      throw Exception(e.response?.data['message'] ?? "Gagal memuat foto board");
+    } catch (e) {
+      print("Error: $e");
+      throw Exception("Gagal memuat foto board");
     }
   }
 
@@ -268,6 +314,96 @@ class BoardService {
     } catch (e) {
       print("Error: $e");
       throw Exception("Gagal menghapus board");
+    }
+  }
+
+  Future<void> addPhotoToBoard({
+    required int boardId,
+    required int photoId,
+  }) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString("token");
+
+      if (token == null) {
+        throw Exception("Token tidak ditemukan. Harus login dulu.");
+      }
+
+      // set authorization header
+      _dio.options.headers["Authorization"] = "Bearer $token";
+
+      final response = await _dio.post(
+        "/boards/$boardId/add-photo",
+        data: {
+          'photo_id': photoId,
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final jsonData = response.data;
+        if (jsonData['success'] == true) {
+          return;
+        }
+        throw Exception("Gagal menambahkan foto ke board");
+      } else {
+        throw Exception("Gagal menambahkan foto ke board");
+      }
+    } on DioException catch (e) {
+      print("Dio error: ${e.response?.data}");
+      
+      // Handle specific error messages
+      if (e.response?.statusCode == 400) {
+        throw Exception("Foto sudah ada di board ini");
+      } else if (e.response?.statusCode == 403) {
+        throw Exception("Anda tidak memiliki akses ke board ini");
+      }
+      
+      throw Exception(e.response?.data['message'] ?? "Gagal menambahkan foto ke board");
+    } catch (e) {
+      print("Error: $e");
+      throw Exception("Gagal menambahkan foto ke board");
+    }
+  }
+
+  Future<void> removePhotoFromBoard({
+    required int boardId,
+    required int photoId,
+  }) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString("token");
+
+      if (token == null) {
+        throw Exception("Token tidak ditemukan. Harus login dulu.");
+      }
+
+      // set authorization header
+      _dio.options.headers["Authorization"] = "Bearer $token";
+
+      final response = await _dio.delete(
+        "/boards/$boardId/photos/$photoId",
+      );
+
+      if (response.statusCode == 200) {
+        final jsonData = response.data;
+        if (jsonData['success'] == true) {
+          return;
+        }
+        throw Exception("Gagal menghapus foto dari board");
+      } else {
+        throw Exception("Gagal menghapus foto dari board");
+      }
+    } on DioException catch (e) {
+      print("Dio error: ${e.response?.data}");
+      
+      if (e.response?.statusCode == 403) {
+        throw Exception("Anda tidak memiliki akses ke board ini");
+      }
+      
+      throw Exception(e.response?.data['message'] ?? "Gagal menghapus foto dari board");
+    } catch (e) {
+      print("Error: $e");
+      throw Exception("Gagal menghapus foto dari board");
     }
   }
 }

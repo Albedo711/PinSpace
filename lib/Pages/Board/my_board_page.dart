@@ -12,6 +12,7 @@ import '../Auth/login_page.dart';
 import '../Auth/register_page.dart';
 import 'create_board_page.dart';
 import 'update_board_page.dart';
+import 'board_detail_page.dart'; // TAMBAHKAN IMPORT INI
 
 class MyBoardsPage extends StatefulWidget {
   const MyBoardsPage({super.key});
@@ -235,9 +236,19 @@ class _MyBoardsPageState extends State<MyBoardsPage> {
             : null;
 
         return GestureDetector(
+          // UPDATE BAGIAN INI - Tambahkan navigasi ke BoardDetailPage
           onTap: () {
-            // Navigate ke halaman detail board
-            // Navigator.pushNamed(context, '/board-detail', arguments: board);
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => BoardDetailPage(board: board),
+              ),
+            ).then((deleted) {
+              // Refresh boards jika board dihapus dari detail page
+              if (deleted == true) {
+                fetchBoards();
+              }
+            });
           },
           child: Container(
             decoration: BoxDecoration(
@@ -391,7 +402,7 @@ class _MyBoardsPageState extends State<MyBoardsPage> {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => EditBoardPage(board: board), // Ganti dengan page edit board Anda
+                            builder: (_) => EditBoardPage(board: board),
                           ),
                         ).then((_) => fetchBoards()); // Refresh setelah edit
                       },

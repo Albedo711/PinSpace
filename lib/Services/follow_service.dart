@@ -84,20 +84,6 @@ class FollowService {
     return userId;
   }
 
-  /// Check if photo belongs to current user
-  Future<bool> isOwnPhoto(int photoUserId) async {
-    final myId = await getCurrentUserId();
-    
-    if (myId == null) {
-      print("FollowService.isOwnPhoto: No user logged in (myId is null)");
-      return false; // Not logged in, so not own photo
-    }
-    
-    final isOwn = myId == photoUserId;
-    print("FollowService.isOwnPhoto: myId=$myId, photoUserId=$photoUserId, isOwn=$isOwn");
-    return isOwn;
-  }
-
   /// Get token from SharedPreferences
   Future<String> _getToken() async {
     final prefs = await SharedPreferences.getInstance();

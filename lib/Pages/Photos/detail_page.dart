@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../model/photo.dart';
 import '../../Services/photo_service.dart';
-import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -9,6 +8,8 @@ import 'dart:html' as html;
 import '../../Services/comments_service.dart';
 import '../../Services/follow_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../Services/report_service.dart';
+import '../../Services/save_service.dart';
 
 class PhotoDetailPage extends StatefulWidget {
   final Photo photo;
@@ -33,45 +34,66 @@ class _PhotoDetailPageState extends State<PhotoDetailPage> {
   bool isFollowing = false;
   bool loadingFollow = true;
   bool isOwnPhoto = false;
+  final ReportService _reportService = ReportService();
+  String? myAvatar;
+  bool isSaved = false;
+  final SaveService _saveService = SaveService();
 
   @override
 void initState() {
   super.initState();
+  loadMyAvatar();
   fetchRelatedPhotos();
   fetchPhotoLikeInfo();
   fetchComments();
   checkFollowStatus();
+  checkSavedStatus();
+}
+
+
+Future<void> loadMyAvatar() async {
+  final prefs = await SharedPreferences.getInstance();
+  setState(() {
+    myAvatar = prefs.getString('user_avatar');
+  });
+}
+
+Future<void> checkSavedStatus() async {
+  final saved = await _saveService.isPhotoSaved(widget.photo.id);
+  setState(() {
+    isSaved = saved;
+  });
 }
 
  
 Future<void> checkFollowStatus() async {
   try {
-    // Check if this is user's own photo
-    final isOwn = await _followService.isOwnPhoto(widget.photo.userId);
-    
-    if (isOwn) {
+    final prefs = await SharedPreferences.getInstance();
+    final currentUserId = prefs.getInt('user_id');
+
+    print("LOGGED USER ID: $currentUserId");
+    print("PHOTO USER ID: ${widget.photo.userId}");
+
+    // Kalau foto milik sendiri → jangan tampilkan tombol Follow
+    if (currentUserId == widget.photo.userId) {
       setState(() {
         isOwnPhoto = true;
         loadingFollow = false;
       });
-      print("PhotoDetail: This is user's own photo, hiding follow button");
       return;
     }
 
-    // Not own photo, check follow status
+    // Kalau bukan milik sendiri → cek status follow
     final result = await _followService.checkFollow(widget.photo.userId);
-    
+
     setState(() {
       isFollowing = result["data"]["is_following"] ?? false;
       isOwnPhoto = false;
       loadingFollow = false;
     });
-    
-    print("PhotoDetail: Follow status loaded - isFollowing: $isFollowing");
   } catch (e) {
-    print("PhotoDetail.checkFollowStatus ERROR: $e");
-    
-    // On error, assume not own photo and not following
+    print("checkFollowStatus ERROR: $e");
+
     setState(() {
       isFollowing = false;
       isOwnPhoto = false;
@@ -79,6 +101,97 @@ Future<void> checkFollowStatus() async {
     });
   }
 }
+
+  void _showReportDialog() {
+  final TextEditingController descController = TextEditingController();
+  String selectedReason = "spam";
+
+  showDialog(
+    context: context,
+    barrierDismissible: false,
+    builder: (context) {
+      return AlertDialog(
+        backgroundColor: const Color(0xFF1A2332),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        title: const Text(
+          "Report Photo",
+          style: TextStyle(color: Colors.white),
+        ),
+        content: StatefulBuilder(
+          builder: (context, setState) {
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                DropdownButtonFormField<String>(
+                  dropdownColor: const Color(0xFF1A2332),
+                  value: selectedReason,
+                  items: const [
+                    DropdownMenuItem(value: "spam", child: Text("Spam")),
+                    DropdownMenuItem(value: "nudity", child: Text("Nudity")),
+                    DropdownMenuItem(value: "violence", child: Text("Violence")),
+                    DropdownMenuItem(value: "hate", child: Text("Hate Speech")),
+                  ],
+                  onChanged: (val) {
+                    setState(() {
+                      selectedReason = val!;
+                    });
+                  },
+                  decoration: const InputDecoration(
+                    labelText: "Reason",
+                    labelStyle: TextStyle(color: Colors.white70),
+                  ),
+                  style: const TextStyle(color: Colors.white),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: descController,
+                  maxLines: 3,
+                  style: const TextStyle(color: Colors.white),
+                  decoration: const InputDecoration(
+                    hintText: "Description",
+                    hintStyle: TextStyle(color: Colors.white38),
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
+        actions: [
+          TextButton(
+            child: const Text("Cancel", style: TextStyle(color: Colors.white70)),
+            onPressed: () => Navigator.pop(context),
+          ),
+          ElevatedButton(
+            child: const Text("Submit"),
+            onPressed: () async {
+              try {
+                await _reportService.submitReport(
+                  type: "photo",
+                  id: widget.photo.id,
+                  reason: selectedReason,
+                  description: descController.text.trim(),
+                );
+
+                Navigator.pop(context);
+
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text("Report submitted ✅")),
+                );
+              } catch (e) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text("Failed: $e")),
+                );
+              }
+            },
+          )
+        ],
+      );
+    },
+  );
+}
+
 
   Future<void> fetchComments() async {
   try {
@@ -290,6 +403,7 @@ Future<void> fetchPhotoLikeInfo() async {
                   padding: const EdgeInsets.symmetric(horizontal: 20.0),
                   child: Row(
                     children: [
+                      // LIKE
                       _buildActionButton(
                         icon: isLiked ? Icons.favorite : Icons.favorite_border,
                         label: "$likeCount",
@@ -303,7 +417,6 @@ Future<void> fetchPhotoLikeInfo() async {
                               likeCount = result['data']['count'];
                             });
 
-                            // Simpan liked & count ke SharedPreferences
                             await _photoService.saveLikeStatus(widget.photo.id, isLiked, likeCount);
 
                             ScaffoldMessenger.of(context).showSnackBar(
@@ -317,19 +430,58 @@ Future<void> fetchPhotoLikeInfo() async {
                         },
                       ),
 
-
-
                       const SizedBox(width: 20),
+
+                      // COMMENT
                       _buildActionButton(
                         icon: Icons.mode_comment_outlined,
                         label: "${comments.length}",
                         color: Colors.white70,
                       ),
+
+                      const SizedBox(width: 20),
+
+                      // SAVE
+                      _buildActionButton(
+                      icon: isSaved ? Icons.bookmark : Icons.bookmark_border,
+                      label: isSaved ? "Saved" : "Save",
+                      color: isSaved ? Colors.deepPurpleAccent : Colors.white70,
+                      onTap: () async {
+                        try {
+                          final result = await _saveService.savePhoto(widget.photo.id);
+                          setState(() {
+                            isSaved = result['data']['saved'] ?? !isSaved;
+                          });
+
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text(result['message'] ?? "Photo saved")),
+                          );
+                        } catch (e) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Failed to save photo: $e')),
+                          );
+                        }
+                      },
+                    ),
+
+
+                      // REPORT + SPACING → hanya muncul kalau !isOwnPhoto
+                      if (!isOwnPhoto) ...[
+                        const SizedBox(width: 20),
+                        _buildActionButton(
+                          icon: Icons.flag_outlined,
+                          label: "Report",
+                          color: Colors.redAccent,
+                          onTap: _showReportDialog,
+                        ),
+                      ],
+
                       const Spacer(),
                       _buildDownloadButton(),
                     ],
                   ),
                 ),
+
 
                 const SizedBox(height: 24),
 
@@ -470,21 +622,25 @@ Future<void> fetchPhotoLikeInfo() async {
                             shape: BoxShape.circle,
                             color: Colors.white,
                           ),
-                          child: const Icon(
-                            Icons.person,
-                            color: Colors.black87,
-                            size: 32,
+                          child: ClipOval(
+                            child: (widget.photo.user?.avatar == null ||
+                                    widget.photo.user!.avatar!.isEmpty)
+                                ? const Icon(Icons.person, color: Colors.black87, size: 32)
+                                : Image.network(
+                                    "http://127.0.0.1:8000/${widget.photo.user!.avatar}",
+                                    fit: BoxFit.cover,
+                                  ),
                           ),
                         ),
                       ),
                       const SizedBox(width: 14),
-                      // Name and Category
+                      // Name 
                       Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            widget.photo.userName ?? "Anonymous",
+                            widget.photo.user?.name ?? "Anonymous",
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 17,
@@ -809,16 +965,31 @@ Future<void> fetchPhotoLikeInfo() async {
                             ],
                           ),
                         ),
-                        child: const Icon(
-                          Icons.person,
-                          color: Colors.white70,
-                          size: 20,
-                        ),
+                        child: ClipOval(
+  child: (myAvatar == null || myAvatar!.isEmpty)
+      ? const Icon(
+          Icons.person,
+          color: Colors.white70,
+          size: 20,
+        )
+      : Image.network(
+          "http://127.0.0.1:8000/$myAvatar",
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) {
+            return const Icon(
+              Icons.person,
+              color: Colors.white70,
+              size: 20,
+            );
+          },
+        ),
+),
+
                       ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: TextField(
-                          controller: _commentController,   // <-- WAJIB
+                          controller: _commentController,   
                           style: const TextStyle(color: Colors.white),
                           decoration: const InputDecoration(
                             hintText: "Add a comment...",
@@ -894,18 +1065,27 @@ Future<void> fetchPhotoLikeInfo() async {
             itemBuilder: (context, index) {
               final c = comments[index];
               return ListTile(
-                leading: const CircleAvatar(
-                  child: Icon(Icons.person),
-                ),
-                title: Text(
-                  c["user"]["name"] ?? "Unknown",
-                  style: const TextStyle(color: Colors.white),
-                ),
-                subtitle: Text(
-                  c["comment"],
-                  style: const TextStyle(color: Colors.white70),
-                ),
-              );
+  leading: CircleAvatar(
+    backgroundColor: Colors.white24,
+    backgroundImage: (c["user"]?["avatar"] != null &&
+            c["user"]["avatar"].toString().isNotEmpty)
+        ? NetworkImage("http://127.0.0.1:8000/${c["user"]["avatar"]}")
+        : null,
+    child: (c["user"]?["avatar"] == null ||
+            c["user"]["avatar"].toString().isEmpty)
+        ? const Icon(Icons.person, color: Colors.white70)
+        : null,
+  ),
+  title: Text(
+    c["user"]["name"] ?? "Unknown",
+    style: const TextStyle(color: Colors.white),
+  ),
+  subtitle: Text(
+    c["comment"],
+    style: const TextStyle(color: Colors.white70),
+  ),
+);
+
             },
           ),
 

@@ -12,6 +12,7 @@ import 'Auth/register_page.dart';
 import 'search_page.dart';
 import 'Photos/upload_page.dart';
 import 'Profile/profile_page.dart';
+import 'save_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -120,6 +121,7 @@ class _HomePageState extends State<HomePage> {
     return Scaffold(
       backgroundColor: const Color(0xFF0F1523),
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         backgroundColor: const Color(0xFF1A2332),
         elevation: 4,
         shadowColor: Colors.black45,
@@ -141,51 +143,57 @@ class _HomePageState extends State<HomePage> {
             ),
             if (isLoggedIn)
               Row(
-                children: [
-                  PopupMenuButton<String>(
-                    offset: const Offset(0, 45),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    onSelected: (value) {
-                      if (value == "profile") {
-                        setState(() {
-                          currentIndex = 4; // Pindah ke tab Profile
-                        });
-                      } else if (value == "logout") {
-                        logout();
-                      }
-                    },
-                    itemBuilder: (context) => const [
-                      PopupMenuItem(value: "profile", child: Text("Profile")),
-                      PopupMenuItem(value: "logout", child: Text("Logout")),
-                    ],
-                    child: Container(
-                      width: 38,
-                      height: 38,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                            color: Colors.deepPurpleAccent, width: 2),
-                      ),
-                      child: ClipOval(
-                        child: (userModel?.avatar == null ||
-                                userModel!.avatar!.isEmpty)
-                            ? const Icon(Icons.person, color: Colors.white70)
-                            : Image.network(
-                                "http://127.0.0.1:8000/${userModel!.avatar}",
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) {
-                                  return const Icon(Icons.person,
-                                      color: Colors.white70);
-                                },
-                              ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                ],
-              )
+  children: [
+    PopupMenuButton<String>(
+      offset: const Offset(0, 45),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      onSelected: (value) {
+        if (value == "profile") {
+          setState(() {
+            currentIndex = 4;
+          });
+        } else if (value == "saved") {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const SavePage(),
+            ),
+          );
+        } else if (value == "logout") {
+          logout();
+        }
+      },
+      itemBuilder: (context) => const [
+        PopupMenuItem(value: "profile", child: Text("Profile")),
+        PopupMenuItem(value: "saved", child: Text("Saved Photo")),
+        PopupMenuItem(value: "logout", child: Text("Logout")),
+      ],
+      child: Container(
+        width: 38,
+        height: 38,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          border: Border.all(color: Colors.deepPurpleAccent, width: 2),
+        ),
+        child: ClipOval(
+          child: (userModel?.avatar == null || userModel!.avatar!.isEmpty)
+              ? const Icon(Icons.person, color: Colors.white70)
+              : Image.network(
+                  "http://127.0.0.1:8000/${userModel!.avatar}",
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    return const Icon(Icons.person, color: Colors.white70);
+                  },
+                ),
+        ),
+      ),
+    ),
+    const SizedBox(width: 12),
+  ],
+)
+
             else
               Row(
                 children: [

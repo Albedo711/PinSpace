@@ -1,12 +1,26 @@
 import 'package:flutter/material.dart';
-import 'pages/home_page.dart'; // Buat HomePage di folder pages
+import 'package:shared_preferences/shared_preferences.dart';
+import 'Pages/home_page.dart';
+import 'Pages/Auth/login_page.dart';
 
-void main() {
-  runApp(const MyApp());
+void main() async {
+  // Pastikan Flutter sudah terinisialisasi
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  // Cek status login dari SharedPreferences
+  final prefs = await SharedPreferences.getInstance();
+  final isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
+  
+  runApp(MyApp(isLoggedIn: isLoggedIn));
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final bool isLoggedIn;
+
+  const MyApp({
+    super.key,
+    required this.isLoggedIn,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -19,9 +33,8 @@ class MyApp extends StatelessWidget {
           primary: Colors.deepPurpleAccent,
         ),
       ),
-
-      // ➜ LANGSUNG KE HOMEPAGE
-      home: HomePage(),
+      
+      home: isLoggedIn ? const HomePage() : LoginPage(),
     );
   }
 }

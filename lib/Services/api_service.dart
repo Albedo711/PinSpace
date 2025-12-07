@@ -20,10 +20,16 @@ class ApiService {
 
     if (response.statusCode == 200 && json["success"] == true) {
       final token = json["data"]["token"];
+      final userId = json["data"]["id"];
+      final name = json["data"]["name"];
+      final avatar = json["data"]["avatar"];
 
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString("token", token);
+      await prefs.setInt("user_id", userId);
+      await prefs.setString("user_name", name);
       await prefs.setBool("isLoggedIn", true);
+      await prefs.setString("user_avatar", avatar ?? '');
 
       return {"success": true, "data": json["data"]};
     }

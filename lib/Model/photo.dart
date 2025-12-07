@@ -1,3 +1,5 @@
+import 'user.dart';
+
 class Photo {
   final int id;
   final String title;
@@ -8,8 +10,9 @@ class Photo {
   final int height;
   final int userId;
   final String? userName; 
-  final bool liked;      // <--- baru
-  final int likeCount;   // <--- baru
+  final bool liked;      
+  final int likeCount;
+  final UserModel? user;  
 
   Photo({
     required this.id,
@@ -23,6 +26,7 @@ class Photo {
     this.userName,
     this.liked = false,
     this.likeCount = 0,
+    required this.user,
   });
 
   factory Photo.fromJson(Map<String, dynamic> json) {
@@ -36,8 +40,11 @@ class Photo {
       height: int.tryParse(json['height'].toString()) ?? 0,
       userId: int.tryParse(json['user_id'].toString()) ?? 0,
       userName: json['user']?['name'],
-      liked: json['liked'] ?? false,          // <--- ambil dari API
-      likeCount: json['like_count'] ?? 0,     // <--- ambil dari API
+      liked: json['liked'] ?? false,         
+      likeCount: json['like_count'] ?? 0,
+      user: json['user'] != null
+    ? UserModel.fromJson(json['user'])
+    : null,     
     );
   }
 }
