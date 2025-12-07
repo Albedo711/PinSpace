@@ -2,10 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import '../Services/photo_service.dart';
 import '../model/photo.dart';
-import 'detail_page.dart';
-import 'home_page.dart';
-import 'upload_page.dart';
-import 'profile_page.dart';
+import 'Photos/detail_page.dart';
 
 class SearchPage extends StatefulWidget {
   const SearchPage({super.key});
@@ -24,45 +21,12 @@ class _SearchPageState extends State<SearchPage> {
   bool loading = true;
   bool searching = false;
   int _currentSlide = 0;
-  int currentIndex = 1; 
+
 
   @override
   void initState() {
     super.initState();
     fetchPhotos();
-  }
-
-  void onTabTapped(int index) {
-    setState(() => currentIndex = index);
-
-    if (index == 0) {
-      Navigator.pushReplacement(
-        context,
-        PageRouteBuilder(
-          pageBuilder: (context, animation, secondaryAnimation) => const HomePage(),
-          transitionDuration: Duration.zero,
-          reverseTransitionDuration: Duration.zero,
-        ),
-      );
-    } else if (index == 1) {
-      // Already on Search Page
-    } else if (index == 2) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const UploadPage()),
-      );
-    } else if (index == 3) {
-      // TODO: Board Page
-    } else if (index == 4) {
-      Navigator.pushReplacement(
-        context,
-        PageRouteBuilder(
-          pageBuilder: (context, animation, secondaryAnimation) => const ProfilePage(),
-          transitionDuration: Duration.zero,
-          reverseTransitionDuration: Duration.zero,
-        ),
-      );
-    }
   }
 
   @override
@@ -277,7 +241,7 @@ class _SearchPageState extends State<SearchPage> {
                                 final photo = recentPhotos[index];
                                 final imageUrl = photo.imagePath.startsWith('http')
                                     ? photo.imagePath
-                                    : "http://192.168.100.44:8000/${photo.imagePath}";
+                                    : "http://127.0.0.1:8000/${photo.imagePath}";
 
                                 return GestureDetector(
                                   onTap: () {
@@ -479,36 +443,6 @@ class _SearchPageState extends State<SearchPage> {
                 ],
               ),
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        type: BottomNavigationBarType.fixed,
-        backgroundColor: const Color(0xFF1A2332),
-        selectedItemColor: Colors.white,
-        unselectedItemColor: Colors.white54,
-        currentIndex: currentIndex,
-        onTap: onTabTapped,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home_outlined),
-            label: "Home",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.search),
-            label: "Search",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.add_circle, size: 32),
-            label: "Upload",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.dashboard_outlined),
-            label: "Board",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline),
-            label: "Profile",
-          ),
-        ],
-      ),
     );
   }
 
@@ -548,7 +482,7 @@ class _SearchPageState extends State<SearchPage> {
                     children: columns[columnIndex].map((photo) {
                       final imageUrl = photo.imagePath.startsWith('http')
                           ? photo.imagePath
-                          : "http://192.168.100.44:8000/${photo.imagePath}";
+                          : "http://127.0.0.1:8000/${photo.imagePath}";
 
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 8),

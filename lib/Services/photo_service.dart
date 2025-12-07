@@ -8,7 +8,7 @@ import 'dart:convert';
 
 class PhotoService {
   final Dio _dio = Dio();
-  final String baseUrl = "http://192.168.100.44:8000/api";
+  final String baseUrl = "http://127.0.0.1:8000/api";
 
   Future<List<Photo>> getPhotos() async {
     final prefs = await SharedPreferences.getInstance();

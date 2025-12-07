@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'detail_page.dart';
+import 'Photos/detail_page.dart';
 import '../Services/photo_service.dart';
 import '../model/photo.dart';
 import '../model/user.dart';
 import '../Services/user_service.dart';
-
+import 'Board/my_board_page.dart';
 // IMPORT HALAMAN LAIN
-import 'login_page.dart';
-import 'register_page.dart';
+import 'Auth/login_page.dart';
+import 'Auth/register_page.dart';
 import 'search_page.dart';
-import 'upload_page.dart';
-import 'profile_page.dart';
+import 'Photos/upload_page.dart';
+import 'Profile/profile_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -75,6 +75,7 @@ class _HomePageState extends State<HomePage> {
     setState(() {
       isLoggedIn = false;
       photos = [];
+      currentIndex = 0; // Reset ke home setelah logout
     });
 
     ScaffoldMessenger.of(context).showSnackBar(
@@ -97,9 +98,8 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  // INI YANG DIUBAH - Cuma setState, tidak ada Navigator
   void onTabTapped(int index) {
-    setState(() => currentIndex = index);
-
     if (!isLoggedIn && index != 0) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -110,39 +110,9 @@ class _HomePageState extends State<HomePage> {
       return;
     }
 
-    if (index == 0) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const HomePage()),
-      );
-    } else if (index == 1) {
-      Navigator.pushReplacement(
-        context,
-        PageRouteBuilder(
-          pageBuilder: (context, animation, secondaryAnimation) =>
-              const SearchPage(),
-          transitionDuration: Duration.zero,
-          reverseTransitionDuration: Duration.zero,
-        ),
-      );
-    } else if (index == 2) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const UploadPage()),
-      );
-    } else if (index == 3) {
-      // TODO: Board Page
-    } else if (index == 4) {
-      Navigator.pushReplacement(
-        context,
-        PageRouteBuilder(
-          pageBuilder: (context, animation, secondaryAnimation) =>
-              const ProfilePage(),
-          transitionDuration: Duration.zero,
-          reverseTransitionDuration: Duration.zero,
-        ),
-      );
-    }
+    setState(() {
+      currentIndex = index;
+    });
   }
 
   @override
@@ -179,16 +149,9 @@ class _HomePageState extends State<HomePage> {
                     ),
                     onSelected: (value) {
                       if (value == "profile") {
-                        Navigator.pushReplacement(
-                          context,
-                          PageRouteBuilder(
-                            pageBuilder:
-                                (context, animation, secondaryAnimation) =>
-                                    const ProfilePage(),
-                            transitionDuration: Duration.zero,
-                            reverseTransitionDuration: Duration.zero,
-                          ),
-                        );
+                        setState(() {
+                          currentIndex = 4; // Pindah ke tab Profile
+                        });
                       } else if (value == "logout") {
                         logout();
                       }
@@ -210,7 +173,7 @@ class _HomePageState extends State<HomePage> {
                                 userModel!.avatar!.isEmpty)
                             ? const Icon(Icons.person, color: Colors.white70)
                             : Image.network(
-                                "http://192.168.100.44:8000/${userModel!.avatar}",
+                                "http://127.0.0.1:8000/${userModel!.avatar}",
                                 fit: BoxFit.cover,
                                 errorBuilder: (context, error, stackTrace) {
                                   return const Icon(Icons.person,
@@ -231,7 +194,10 @@ class _HomePageState extends State<HomePage> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(builder: (_) => LoginPage()),
-                      ).then((_) => checkLoginStatus());
+                      ).then((_) {
+                        checkLoginStatus();
+                        fetchPhotos(); // Refresh photos setelah login
+                      });
                     },
                     icon: const Icon(Icons.login, color: Colors.white),
                     label: const Text("Login",
@@ -251,7 +217,10 @@ class _HomePageState extends State<HomePage> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(builder: (_) => const RegisterPage()),
-                      ).then((_) => checkLoginStatus());
+                      ).then((_) {
+                        checkLoginStatus();
+                        fetchPhotos(); // Refresh photos setelah register
+                      });
                     },
                     child: const Text("Register",
                         style: TextStyle(color: Colors.white)),
@@ -262,7 +231,17 @@ class _HomePageState extends State<HomePage> {
           ],
         ),
       ),
-      body: _buildBody(),
+      // INI YANG PENTING - Gunakan IndexedStack
+      body: IndexedStack(
+        index: currentIndex,
+        children: [
+          _buildBody(), // Index 0 - Home
+          const SearchPage(), // Index 1 - Search
+          const UploadPage(), // Index 2 - Upload
+          const MyBoardsPage(), // Index 3 - Board
+          const ProfilePage(), // Index 4 - Profile
+        ],
+      ),
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
         backgroundColor: const Color(0xFF1A2332),
@@ -307,7 +286,10 @@ class _HomePageState extends State<HomePage> {
             Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => LoginPage()),
-            ).then((_) => checkLoginStatus());
+            ).then((_) {
+              checkLoginStatus();
+              fetchPhotos();
+            });
           },
           icon: const Icon(Icons.login),
           label: const Text("Login Sekarang"),
@@ -359,10 +341,9 @@ class _HomePageState extends State<HomePage> {
         subtitle: "Mulai upload foto untuk membuat koleksi Anda",
         actionButton: ElevatedButton.icon(
           onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const UploadPage()),
-            );
+            setState(() {
+              currentIndex = 2; // Pindah ke tab Upload
+            });
           },
           icon: const Icon(Icons.add_photo_alternate),
           label: const Text("Upload Foto"),
@@ -482,7 +463,6 @@ class MasonryGridView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Bagi foto ke dalam kolom
     List<List<Photo>> columns = List.generate(columnCount, (_) => []);
     
     for (int i = 0; i < photos.length; i++) {
@@ -515,81 +495,84 @@ class MasonryGridView extends StatelessWidget {
   }
 
   Widget _buildPhotoCard(Photo photo) {
-    final String imagePath = "http://192.168.100.44:8000/${photo.imagePath}";
+    final String imagePath = "http://127.0.0.1:8000/${photo.imagePath}";
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
-      child: GestureDetector(
-        onTap: () => onPhotoTap(photo),
-        child: Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.2),
-                blurRadius: 6,
-                offset: const Offset(0, 3),
-              ),
-            ],
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: Stack(
-              children: [
-                Image.network(
-                  imagePath,
-                  fit: BoxFit.cover,
-                  width: double.infinity,
-                  loadingBuilder: (context, child, loadingProgress) {
-                    if (loadingProgress == null) return child;
-                    return AspectRatio(
-                      aspectRatio: 1,
-                      child: Container(
-                        color: const Color(0xFF1A2332),
-                        child: Center(
-                          child: CircularProgressIndicator(
-                            color: Colors.deepPurpleAccent,
-                            value: loadingProgress.expectedTotalBytes != null
-                                ? loadingProgress.cumulativeBytesLoaded /
-                                    loadingProgress.expectedTotalBytes!
-                                : null,
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                  errorBuilder: (context, error, stackTrace) {
-                    return AspectRatio(
-                      aspectRatio: 1,
-                      child: Container(
-                        color: const Color(0xFF1A2332),
-                        child: const Center(
-                          child: Icon(
-                            Icons.broken_image,
-                            color: Colors.white54,
-                            size: 40,
-                          ),
-                        ),
-                      ),
-                    );
-                  },
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: () => onPhotoTap(photo),
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.2),
+                  blurRadius: 6,
+                  offset: const Offset(0, 3),
                 ),
-                // Gradient overlay
-                Positioned.fill(
-                  child: Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Colors.transparent,
-                          Colors.black.withOpacity(0.1),
-                        ],
+              ],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Stack(
+                children: [
+                  Image.network(
+                    imagePath,
+                    fit: BoxFit.cover,
+                    width: double.infinity,
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      return AspectRatio(
+                        aspectRatio: 1,
+                        child: Container(
+                          color: const Color(0xFF1A2332),
+                          child: Center(
+                            child: CircularProgressIndicator(
+                              color: Colors.deepPurpleAccent,
+                              value: loadingProgress.expectedTotalBytes != null
+                                  ? loadingProgress.cumulativeBytesLoaded /
+                                      loadingProgress.expectedTotalBytes!
+                                  : null,
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                    errorBuilder: (context, error, stackTrace) {
+                      return AspectRatio(
+                        aspectRatio: 1,
+                        child: Container(
+                          color: const Color(0xFF1A2332),
+                          child: const Center(
+                            child: Icon(
+                              Icons.broken_image,
+                              color: Colors.white54,
+                              size: 40,
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                  Positioned.fill(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.transparent,
+                            Colors.black.withOpacity(0.1),
+                          ],
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),

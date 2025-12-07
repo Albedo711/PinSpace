@@ -3,7 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class CommentService {
   final Dio dio = Dio(BaseOptions(
-    baseUrl: "http://192.168.100.44:8000/api",
+    baseUrl: "http://127.0.0.1:8000/api",
     headers: {
       "Accept": "application/json",
     },

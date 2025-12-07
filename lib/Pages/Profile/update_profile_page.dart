@@ -3,9 +3,9 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../Services/user_service.dart';
-import '../model/user.dart';
-import 'home_page.dart';
+import '../../Services/user_service.dart';
+import '../../model/user.dart';
+import '../home_page.dart';
 import 'dart:io';
 
 class EditProfilePage extends StatefulWidget {
@@ -174,7 +174,7 @@ class _EditProfilePageState extends State<EditProfilePage> with SingleTickerProv
       );
     } else if (widget.userModel.avatar != null) {
       avatarWidget = Image.network(
-        "http://192.168.100.44:8000/${widget.userModel.avatar}",
+        "http://127.0.0.1:8000/${widget.userModel.avatar}",
         width: 140,
         height: 140,
         fit: BoxFit.cover,

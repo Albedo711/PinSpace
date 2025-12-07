@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
-import '../model/photo.dart';
-import '../Services/photo_service.dart';
+import '../../model/photo.dart';
+import '../../Services/photo_service.dart';
 import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'dart:html' as html;
-import '../Services/comments_service.dart';
+import '../../Services/comments_service.dart';
+import '../../Services/follow_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class PhotoDetailPage extends StatefulWidget {
   final Photo photo;
@@ -27,6 +29,10 @@ class _PhotoDetailPageState extends State<PhotoDetailPage> {
   bool loadingComments = true;
   final CommentService _commentService = CommentService();
   final TextEditingController _commentController = TextEditingController();
+  final FollowService _followService = FollowService();
+  bool isFollowing = false;
+  bool loadingFollow = true;
+  bool isOwnPhoto = false;
 
   @override
 void initState() {
@@ -34,6 +40,44 @@ void initState() {
   fetchRelatedPhotos();
   fetchPhotoLikeInfo();
   fetchComments();
+  checkFollowStatus();
+}
+
+ 
+Future<void> checkFollowStatus() async {
+  try {
+    // Check if this is user's own photo
+    final isOwn = await _followService.isOwnPhoto(widget.photo.userId);
+    
+    if (isOwn) {
+      setState(() {
+        isOwnPhoto = true;
+        loadingFollow = false;
+      });
+      print("PhotoDetail: This is user's own photo, hiding follow button");
+      return;
+    }
+
+    // Not own photo, check follow status
+    final result = await _followService.checkFollow(widget.photo.userId);
+    
+    setState(() {
+      isFollowing = result["data"]["is_following"] ?? false;
+      isOwnPhoto = false;
+      loadingFollow = false;
+    });
+    
+    print("PhotoDetail: Follow status loaded - isFollowing: $isFollowing");
+  } catch (e) {
+    print("PhotoDetail.checkFollowStatus ERROR: $e");
+    
+    // On error, assume not own photo and not following
+    setState(() {
+      isFollowing = false;
+      isOwnPhoto = false;
+      loadingFollow = false;
+    });
+  }
 }
 
   Future<void> fetchComments() async {
@@ -114,7 +158,7 @@ Future<void> fetchPhotoLikeInfo() async {
   }
 
   Future<void> _downloadPhotoWeb() async {
-  final url = "http://192.168.100.44:8000/api/photos/${widget.photo.id}/download";
+  final url = "http://127.0.0.1:8000/api/photos/${widget.photo.id}/download";
   final filename = "${widget.photo.title.replaceAll(' ', '_')}.jpg";
 
   final anchor = html.AnchorElement(href: url)
@@ -137,7 +181,7 @@ Future<void> fetchPhotoLikeInfo() async {
   }
 
   final dio = Dio();
-  final url = "http://192.168.100.44:8000/api/photos/${widget.photo.id}/download";
+  final url = "http://127.0.0.1:8000/api/photos/${widget.photo.id}/download";
 
   try {
     final dir = await getApplicationDocumentsDirectory(); // Bisa diganti getExternalStorageDirectory() untuk Android
@@ -165,7 +209,7 @@ Future<void> fetchPhotoLikeInfo() async {
 
   @override
   Widget build(BuildContext context) {
-    final String imagePath = "http://192.168.100.44:8000/${widget.photo.imagePath}";
+    final String imagePath = "http://127.0.0.1:8000/${widget.photo.imagePath}";
 
     return Scaffold(
       backgroundColor: const Color(0xFF0F1523),
@@ -452,26 +496,48 @@ Future<void> fetchPhotoLikeInfo() async {
                     ),
 
                       // Follow Button
+                      if (!isOwnPhoto && !loadingFollow)
                       Container(
                         decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [
-                              Colors.deepPurpleAccent,
-                              Colors.purpleAccent,
-                            ],
+                          gradient: LinearGradient(
+                            colors: isFollowing
+                                ? [Colors.grey, Colors.blueGrey]
+                                : [Colors.deepPurpleAccent, Colors.purpleAccent],
                           ),
                           borderRadius: BorderRadius.circular(24),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.deepPurpleAccent.withOpacity(0.3),
+                              color: Colors.black.withOpacity(0.2),
                               blurRadius: 8,
                               offset: const Offset(0, 4),
                             ),
                           ],
                         ),
                         child: ElevatedButton(
-                          onPressed: () {
-                            // TODO: Implement follow
+                          onPressed: () async {
+                            try {
+                              if (isFollowing) {
+                                await _followService.unfollowUser(widget.photo.userId);
+                              } else {
+                                await _followService.followUser(widget.photo.userId);
+                              }
+
+                              setState(() {
+                                isFollowing = !isFollowing;
+                              });
+
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    isFollowing ? "Followed" : "Unfollowed",
+                                  ),
+                                ),
+                              );
+                            } catch (e) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text("Error: $e")),
+                              );
+                            }
                           },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.transparent,
@@ -481,15 +547,16 @@ Future<void> fetchPhotoLikeInfo() async {
                               borderRadius: BorderRadius.circular(24),
                             ),
                           ),
-                          child: const Text(
-                            "Follow",
-                            style: TextStyle(
+                          child: Text(
+                            isFollowing ? "Following" : "Follow",
+                            style: const TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
                         ),
                       ),
+
                     ],
                   ),
                 ),
@@ -581,7 +648,7 @@ Future<void> fetchPhotoLikeInfo() async {
                               itemCount: relatedPhotos.length,
                               itemBuilder: (context, index) {
                                 final relatedPhoto = relatedPhotos[index];
-                                final relatedImagePath = "http://192.168.100.44:8000/${relatedPhoto.imagePath}";
+                                final relatedImagePath = "http://127.0.0.1:8000/${relatedPhoto.imagePath}";
 
                                 return GestureDetector(
                                   onTap: () {

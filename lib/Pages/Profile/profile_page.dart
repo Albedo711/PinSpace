@@ -1,14 +1,16 @@
+import 'package:aplikasi_gallery/Pages/Board/my_board_page.dart';
 import 'package:aplikasi_gallery/Pages/search_page.dart';
 import 'package:flutter/material.dart';
-import '../model/user.dart';
-import '../model/photo.dart';
-import '../Services/photo_service.dart';
-import '../Services/user_service.dart';
-import 'detail_page.dart';
+import '../../model/user.dart';
+import '../../model/photo.dart';
+import '../../Services/photo_service.dart';
+import '../../Services/user_service.dart';
+import '../Photos/detail_page.dart';
 import 'update_profile_page.dart';
-import 'home_page.dart';
-import 'upload_page.dart';
-import 'edit_foto.dart';
+import '../home_page.dart';
+import '../Photos/upload_page.dart';
+import '../Photos/edit_foto.dart';
+import '../../Services/follow_service.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -21,7 +23,9 @@ class _ProfilePageState extends State<ProfilePage> {
   UserModel? user;
   List<Photo> userPhotos = [];
   bool loading = true;
-  int currentIndex = 4;
+  List<Map<String, dynamic>> followers = [];
+  List<Map<String, dynamic>> following = [];
+  final FollowService _followService = FollowService();
 
   final PhotoService _photoService = PhotoService();
   final UserService _userService = UserService();
@@ -31,40 +35,6 @@ class _ProfilePageState extends State<ProfilePage> {
     super.initState();
     loadUserData();
   }
-  void onTabTapped(int index) {
-  setState(() => currentIndex = index);
-
-  if (index == 0) {
-    Navigator.pushReplacement(
-  context,
-  PageRouteBuilder(
-    pageBuilder: (context, animation, secondaryAnimation) => const HomePage(),
-    transitionDuration: Duration.zero,
-    reverseTransitionDuration: Duration.zero,
-  ),
-);
-
-  } else if (index == 1) {
-    Navigator.pushReplacement(
-  context,
-  PageRouteBuilder(
-    pageBuilder: (context, animation, secondaryAnimation) => const SearchPage(),
-    transitionDuration: Duration.zero,
-    reverseTransitionDuration: Duration.zero,
-  ),
-);
-  } else if (index == 2) {
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (_) => const UploadPage()),
-    );
-  } else if (index == 3) {
-    // TODO: Board Page
-  } else if (index == 4) {
-    // sudah di profile, tidak perlu navigasi
-  }
-}
-
 
   void _navigateToEditProfile() {
   if (user == null) return; // pastikan user sudah terload
@@ -82,29 +52,34 @@ class _ProfilePageState extends State<ProfilePage> {
 
 
   Future<void> loadUserData() async {
-    setState(() => loading = true);
+  setState(() => loading = true);
 
-    try {
-      final profile = await _userService.getProfile();
-      final photos = await _photoService.getUserPhotos();
+  try {
+    final profile = await _userService.getProfile();
+    final photos = await _photoService.getUserPhotos();
+    final userFollowers = await _followService.getFollowers(profile.id);
+    final userFollowing = await _followService.getFollowing(profile.id);
 
-      setState(() {
-        user = profile;
-        userPhotos = photos;
-        loading = false;
-      });
-    } catch (e) {
-      setState(() => loading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text("Gagal memuat data: $e"),
-          backgroundColor: Colors.red.shade400,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        ),
-      );
-    }
+    setState(() {
+      user = profile;
+      userPhotos = photos;
+      followers = userFollowers;
+      following = userFollowing;
+      loading = false;
+    });
+  } catch (e) {
+    setState(() => loading = false);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text("Gagal memuat data: $e"),
+        backgroundColor: Colors.red.shade400,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+    );
   }
+}
+
 
   @override
   Widget build(BuildContext context) {
@@ -237,7 +212,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                             ),
                                           )
                                         : Image.network(
-                                            "http://192.168.100.44:8000/${user!.avatar}",
+                                            "http://127.0.0.1:8000/${user!.avatar}",
                                             fit: BoxFit.cover,
                                             errorBuilder:
                                                 (context, error, stackTrace) {
@@ -283,47 +258,48 @@ class _ProfilePageState extends State<ProfilePage> {
                               const SizedBox(height: 24),
                               // Stats Card
                               Container(
-                                margin: const EdgeInsets.symmetric(horizontal: 24),
-                                padding: const EdgeInsets.all(20),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(20),
-                                  border: Border.all(
-                                    color: Colors.white.withOpacity(0.2),
-                                    width: 1,
+                                    margin: const EdgeInsets.symmetric(horizontal: 24),
+                                    padding: const EdgeInsets.all(20),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(20),
+                                      border: Border.all(
+                                        color: Colors.white.withOpacity(0.2),
+                                        width: 1,
+                                      ),
+                                    ),
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                                      children: [
+                                        _buildStatItem(
+                                          userPhotos.length.toString(),
+                                          "Photos",
+                                          Icons.photo_library_outlined,
+                                        ),
+                                        Container(
+                                          width: 1,
+                                          height: 40,
+                                          color: Colors.white.withOpacity(0.2),
+                                        ),
+                                        _buildStatItem(
+                                          followers.length.toString(),
+                                          "Followers",
+                                          Icons.people_outline,
+                                        ),
+                                        Container(
+                                          width: 1,
+                                          height: 40,
+                                          color: Colors.white.withOpacity(0.2),
+                                        ),
+                                        _buildStatItem(
+                                          following.length.toString(),
+                                          "Following",
+                                          Icons.person_add_outlined,
+                                        ),
+                                      ],
+                                    ),
                                   ),
-                                ),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                                  children: [
-                                    _buildStatItem(
-                                      userPhotos.length.toString(),
-                                      "Photos",
-                                      Icons.photo_library_outlined,
-                                    ),
-                                    Container(
-                                      width: 1,
-                                      height: 40,
-                                      color: Colors.white.withOpacity(0.2),
-                                    ),
-                                    _buildStatItem(
-                                      "0",
-                                      "Followers",
-                                      Icons.people_outline,
-                                    ),
-                                    Container(
-                                      width: 1,
-                                      height: 40,
-                                      color: Colors.white.withOpacity(0.2),
-                                    ),
-                                    _buildStatItem(
-                                      "0",
-                                      "Following",
-                                      Icons.person_add_outlined,
-                                    ),
-                                  ],
-                                ),
-                              ),
+
                               const SizedBox(height: 24),
                             ],
                           ),
@@ -433,7 +409,7 @@ SliverToBoxAdapter(
                   children: columns[columnIndex].map((photo) {
                     final imageUrl = photo.imagePath.startsWith('http')
                         ? photo.imagePath
-                        : "http://192.168.100.44:8000/${photo.imagePath}";
+                        : "http://127.0.0.1:8000/${photo.imagePath}";
 
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 8),
@@ -613,37 +589,6 @@ SliverToBoxAdapter(
 
                   ],
                 ),
-                bottomNavigationBar: BottomNavigationBar(
-  type: BottomNavigationBarType.fixed,
-  backgroundColor: const Color(0xFF1A2332),
-  selectedItemColor: Colors.white,
-  unselectedItemColor: Colors.white54,
-  currentIndex: currentIndex,
-  onTap: onTabTapped,
-  items: const [
-    BottomNavigationBarItem(
-      icon: Icon(Icons.home_outlined),
-      label: "Home",
-    ),
-    BottomNavigationBarItem(
-      icon: Icon(Icons.search),
-      label: "Search",
-    ),
-    BottomNavigationBarItem(
-      icon: Icon(Icons.add_circle, size: 32),
-      label: "Upload",
-    ),
-    BottomNavigationBarItem(
-      icon: Icon(Icons.dashboard_outlined),
-      label: "Board",
-    ),
-    BottomNavigationBarItem(
-      icon: Icon(Icons.person_outline),
-      label: "Profile",
-    ),
-  ],
-),
-
     );
   }
 

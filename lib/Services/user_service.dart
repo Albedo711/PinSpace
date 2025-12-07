@@ -6,7 +6,7 @@ import 'package:http_parser/http_parser.dart';
 
 class UserService {
   final Dio _dio = Dio();
-  final String baseUrl = "http://192.168.100.44:8000/api";
+  final String baseUrl = "http://127.0.0.1:8000/api";
 
   // ---------------------- GET USER PROFILE ----------------------
   Future<UserModel> getProfile() async {
