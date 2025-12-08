@@ -4,7 +4,6 @@ class Board {
   final String name;
   final String? description;
   final String? coverImage;
-  final bool isPrivate;
   final int photosCount;
 
   Board({
@@ -13,7 +12,6 @@ class Board {
     required this.name,
     this.description,
     this.coverImage,
-    required this.isPrivate,
     required this.photosCount,
   });
 
@@ -24,7 +22,6 @@ class Board {
       name: json['name'],
       description: json['description'],
       coverImage: json['cover_image'],
-      isPrivate: json['is_private'] == 1,
       photosCount: json['photos_count'] ?? 0,
     );
   }

@@ -21,7 +21,7 @@ class _EditBoardPageState extends State<EditBoardPage> {
   final BoardService _boardService = BoardService();
   final ImagePicker _picker = ImagePicker();
 
-  late bool _isPrivate;
+
   bool _isLoading = false;
   
   // Untuk mobile (Android/iOS)
@@ -44,7 +44,6 @@ class _EditBoardPageState extends State<EditBoardPage> {
     super.initState();
     _nameController = TextEditingController(text: widget.board.name);
     _descriptionController = TextEditingController(text: widget.board.description ?? '');
-    _isPrivate = widget.board.isPrivate;
   }
 
   @override
@@ -124,7 +123,6 @@ class _EditBoardPageState extends State<EditBoardPage> {
         boardId: widget.board.id,
         name: _nameController.text.trim(),
         description: _descriptionController.text.trim(),
-        isPrivate: _isPrivate,
         coverImage: imageToUpload,
         removeImage: _imageRemoved,
       );
@@ -466,72 +464,8 @@ class _EditBoardPageState extends State<EditBoardPage> {
                   ),
                 ),
               ),
-              const SizedBox(height: 24),
-
-              // Privacy Toggle
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF1A2332),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.white12),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: _isPrivate
-                            ? Colors.red.withOpacity(0.2)
-                            : Colors.green.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Icon(
-                        _isPrivate ? Icons.lock : Icons.lock_open,
-                        color: _isPrivate ? Colors.redAccent : Colors.greenAccent,
-                        size: 24,
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            _isPrivate ? 'Private Board' : 'Public Board',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            _isPrivate
-                                ? 'Only you can see this board'
-                                : 'Anyone can see this board',
-                            style: const TextStyle(
-                              color: Colors.white54,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Switch(
-                      value: _isPrivate,
-                      onChanged: _isLoading
-                          ? null
-                          : (value) {
-                              setState(() => _isPrivate = value);
-                            },
-                      activeColor: Colors.deepPurpleAccent,
-                      inactiveThumbColor: Colors.white70,
-                      inactiveTrackColor: Colors.white24,
-                    ),
-                  ],
-                ),
-              ),
+             
+             
               const SizedBox(height: 32),
 
               // Update Button

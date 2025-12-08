@@ -290,32 +290,12 @@ class _BoardDetailPageState extends State<BoardDetailPage> {
                         horizontal: 12,
                         vertical: 6,
                       ),
-                      decoration: BoxDecoration(
-                        color: currentBoard.isPrivate
-                            ? Colors.red.withOpacity(0.2)
-                            : Colors.green.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
+                      
                       child: Row(
                         children: [
-                          Icon(
-                            currentBoard.isPrivate ? Icons.lock : Icons.public,
-                            color: currentBoard.isPrivate
-                                ? Colors.redAccent
-                                : Colors.greenAccent,
-                            size: 16,
-                          ),
+                          
                           const SizedBox(width: 4),
-                          Text(
-                            currentBoard.isPrivate ? "Private" : "Public",
-                            style: TextStyle(
-                              color: currentBoard.isPrivate
-                                  ? Colors.redAccent
-                                  : Colors.greenAccent,
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
+                          
                         ],
                       ),
                     ),

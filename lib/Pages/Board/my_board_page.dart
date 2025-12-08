@@ -333,34 +333,11 @@ class _MyBoardsPageState extends State<MyBoardsPage> {
                                     horizontal: 8,
                                     vertical: 4,
                                   ),
-                                  decoration: BoxDecoration(
-                                    color: board.isPrivate
-                                        ? Colors.red.withOpacity(0.2)
-                                        : Colors.green.withOpacity(0.2),
-                                    borderRadius: BorderRadius.circular(6),
-                                  ),
+                                  
                                   child: Row(
                                     children: [
-                                      Icon(
-                                        board.isPrivate
-                                            ? Icons.lock
-                                            : Icons.lock_open,
-                                        color: board.isPrivate
-                                            ? Colors.redAccent
-                                            : Colors.greenAccent,
-                                        size: 12,
-                                      ),
                                       const SizedBox(width: 4),
-                                      Text(
-                                        board.isPrivate ? "Private" : "Public",
-                                        style: TextStyle(
-                                          color: board.isPrivate
-                                              ? Colors.redAccent
-                                              : Colors.greenAccent,
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
+                                      
                                     ],
                                   ),
                                 ),

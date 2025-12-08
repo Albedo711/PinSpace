@@ -297,11 +297,6 @@ class _AddToBoardSheetState extends State<AddToBoardSheet> {
                         const SizedBox(height: 4),
                         Row(
                           children: [
-                            Icon(
-                              board.isPrivate ? Icons.lock : Icons.public,
-                              size: 14,
-                              color: Colors.white54,
-                            ),
                             const SizedBox(width: 4),
                             Text(
                               "${board.photosCount ?? 0} foto",

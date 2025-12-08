@@ -97,7 +97,6 @@ class BoardService {
   Future<Board> createBoard({
     required String name,
     String? description,
-    required bool isPrivate,
     dynamic coverImage, // Bisa File (mobile) atau XFile (web)
   }) async {
     try {
@@ -114,7 +113,6 @@ class BoardService {
       // Prepare FormData
       FormData formData = FormData.fromMap({
         'name': name,
-        'is_private': isPrivate ? '1' : '0',
       });
 
       // Add description if not empty
@@ -189,7 +187,7 @@ class BoardService {
     required int boardId,
     required String name,
     String? description,
-    required bool isPrivate,
+   
     dynamic coverImage, // Bisa File (mobile) atau XFile (web)
     bool removeImage = false,
   }) async {
@@ -206,9 +204,8 @@ class BoardService {
 
       // Prepare FormData
       FormData formData = FormData.fromMap({
-        '_method': 'PUT', // Laravel method spoofing untuk multipart
+        '_method': 'POST', // Laravel method spoofing untuk multipart
         'name': name,
-        'is_private': isPrivate ? '1' : '0',
       });
 
       // Add description if not empty

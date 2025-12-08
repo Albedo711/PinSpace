@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:aplikasi_gallery/Services/api_service.dart';
 import 'login_page.dart';
-import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:flutter/gestures.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -15,7 +16,7 @@ class _RegisterPageState extends State<RegisterPage> {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
   final TextEditingController confirmPasswordController = TextEditingController();
-
+  bool _isHovering = false;
   bool agreeTerms = false;
   bool isLoading = false;
 
@@ -83,7 +84,11 @@ class _RegisterPageState extends State<RegisterPage> {
             /// LOGO
             Column(
               children: [
-                Icon(Icons.image, size: 50, color: Colors.purpleAccent),
+                FaIcon(
+                FontAwesomeIcons.images,
+                size: 60,
+                color: Colors.purpleAccent,
+              ),
                 const SizedBox(height: 10),
                 const Text(
                   "PinSpace",
@@ -155,20 +160,41 @@ class _RegisterPageState extends State<RegisterPage> {
 
                   /// Checkbox syarat
                   Row(
-                    children: [
-                      Checkbox(
-                        value: agreeTerms,
-                        onChanged: (v) => setState(() => agreeTerms = v!),
-                        activeColor: Colors.purple,
-                      ),
-                      Expanded(
-                        child: Text(
-                          "Saya setuju dengan Syarat & Ketentuan",
-                          style: TextStyle(color: Colors.white.withOpacity(0.8)),
-                        ),
-                      ),
-                    ],
-                  ),
+  children: [
+    Checkbox(
+      value: agreeTerms,
+      onChanged: (v) => setState(() => agreeTerms = v!),
+      activeColor: Colors.purpleAccent,
+    ),
+    Expanded(
+      child: MouseRegion(
+        cursor: SystemMouseCursors.click,
+        onEnter: (_) => setState(() => _isHovering = true),
+        onExit: (_) => setState(() => _isHovering = false),
+        child: RichText(
+          text: TextSpan(
+            style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 14),
+            children: [
+              const TextSpan(text: "Saya setuju dengan "),
+              TextSpan(
+                text: "Syarat & Ketentuan",
+                style: TextStyle(
+                  color: _isHovering ? Colors.purpleAccent : Colors.white.withOpacity(0.8),
+                  decoration: TextDecoration.none,
+                ),
+                recognizer: TapGestureRecognizer()
+                  ..onTap = () {
+                    // Tap polos, tidak redirect
+                  },
+              ),
+            ],
+          ),
+        ),
+      ),
+    ),
+  ],
+),
+
 
                   const SizedBox(height: 15),
 
@@ -215,9 +241,8 @@ class _RegisterPageState extends State<RegisterPage> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
-                      _socialButton(Icons.g_mobiledata),
+                      _socialButton(FontAwesomeIcons.google),
                       _socialButton(Icons.facebook),
-                      _socialButton(Icons.code),
                     ],
                   ),
                 ],

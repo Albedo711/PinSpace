@@ -3,6 +3,8 @@ import 'package:aplikasi_gallery/Services/api_service.dart';
 import '../home_page.dart';
 import 'register_page.dart';
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+
 
 class LoginPage extends StatefulWidget {
   @override
@@ -12,7 +14,7 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage> {
   final emailCtrl = TextEditingController();
   final passCtrl = TextEditingController();
-  bool loading = false;  // indikator loading
+  bool loading = false;  
 
   void doLogin() async {
     if (emailCtrl.text.isEmpty || passCtrl.text.isEmpty) {
@@ -61,7 +63,11 @@ class _LoginPageState extends State<LoginPage> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
 
-              Icon(Icons.image, size: 60, color: Colors.purpleAccent),
+              FaIcon(
+                FontAwesomeIcons.images,
+                size: 60,
+                color: Colors.purpleAccent,
+              ),
               SizedBox(height: 10),
               Text("PinSpace",
                   style: TextStyle(
@@ -191,9 +197,8 @@ class _LoginPageState extends State<LoginPage> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
-                        _socialButton(Icons.g_mobiledata),
+                        _socialButton(FontAwesomeIcons.google),
                         _socialButton(Icons.facebook),
-                        _socialButton(Icons.code),
                       ],
                     ),
                   ],
